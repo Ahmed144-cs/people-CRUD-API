@@ -8,17 +8,17 @@ from .schemas import (
     PaginatedPeopleSchema,
     CreatePersonSchema
 )
+
 from .services import (
     get_people,
     create_person,
     update_person,
     delete_person,
-    generate_people,
-    get_person_by_id,
-    people_data
+    get_person_by_id
 )
 
 from .utils import paginate
+
 
 api = NinjaAPI()
 
@@ -37,7 +37,7 @@ def list_people(
     is_married: Optional[bool] = None,
     page: int = Query(1)
 ):
-    data = get_people(
+    queryset = get_people(
         name=name,
         min_age=min_age,
         max_age=max_age,
@@ -45,6 +45,8 @@ def list_people(
         end_date=end_date,
         is_married=is_married,
     )
+
+    data = list(queryset)
 
     paginated = paginate(data, page)
 
@@ -69,6 +71,9 @@ def create_person_view(request, payload: CreatePersonSchema):
     )
 
 
+# =========================
+# GET BY ID
+# =========================
 @api.get("/people/search/{id}", response=PersonSchema)
 def get_person(request, id: int):
     person = get_person_by_id(id)
@@ -81,6 +86,7 @@ def get_person(request, id: int):
         )
 
     return person
+
 
 # =========================
 # UPDATE
@@ -100,7 +106,6 @@ def update_person_view(request, person_id: int, payload: CreatePersonSchema):
     return updated
 
 
-
 # =========================
 # DELETE
 # =========================
@@ -109,7 +114,10 @@ def delete_person_view(request, person_id: int):
     deleted = delete_person(person_id)
 
     if not deleted:
-        return {"success": False, "message": "Person not found"}
+        return {
+            "success": False,
+            "message": "Person not found"
+        }
 
     return {
         "success": True,

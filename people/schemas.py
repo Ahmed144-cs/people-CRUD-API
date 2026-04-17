@@ -1,5 +1,6 @@
 from ninja import Schema
 from typing import List, Optional
+from datetime import date
 
 
 # =========================
@@ -10,8 +11,11 @@ class PersonSchema(Schema):
     name: str
     age: int
     photo: str
-    birth_date: str
+    birth_date: date   # ✅ خليته date بدل string (أفضل مع DB)
     is_married: bool
+
+    class Config:
+        from_attributes = True   # 🔥 يحول Model → Schema تلقائياً
 
 
 # =========================
@@ -19,7 +23,7 @@ class PersonSchema(Schema):
 # =========================
 class CreatePersonSchema(Schema):
     name: str
-    birth_date: str
+    birth_date: date   # ✅ يستقبل Date مباشرة
     is_married: bool
 
 
@@ -28,7 +32,7 @@ class CreatePersonSchema(Schema):
 # =========================
 class UpdatePersonSchema(Schema):
     name: Optional[str] = None
-    birth_date: Optional[str] = None
+    birth_date: Optional[date] = None
     is_married: Optional[bool] = None
 
 
