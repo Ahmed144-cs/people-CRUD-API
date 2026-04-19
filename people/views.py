@@ -1,6 +1,7 @@
+from django.http import HttpResponse
 from ninja import NinjaAPI, Query
 from typing import Optional
-
+from django.db import DatabaseError
 from ninja.errors import HttpError
 
 from .schemas import (
@@ -14,7 +15,6 @@ from .services import (
     create_person,
     update_person,
     delete_person,
-    get_person_by_id
 )
 
 from .utils import paginate
@@ -29,6 +29,7 @@ api = NinjaAPI()
 @api.get("/people", response=PaginatedPeopleSchema)
 def list_people(
     request,
+    id: Optional[int] = None,  # 👈 جديد
     name: Optional[str] = None,
     min_age: Optional[int] = None,
     max_age: Optional[int] = None,
@@ -38,6 +39,7 @@ def list_people(
     page: int = Query(1)
 ):
     queryset = get_people(
+        id=id,
         name=name,
         min_age=min_age,
         max_age=max_age,
@@ -46,9 +48,7 @@ def list_people(
         is_married=is_married,
     )
 
-    data = list(queryset)
-
-    paginated = paginate(data, page)
+    paginated = paginate(queryset, page)
 
     return {
         "people": paginated["items"],
@@ -69,24 +69,6 @@ def create_person_view(request, payload: CreatePersonSchema):
         birth_date=payload.birth_date,
         is_married=payload.is_married
     )
-
-
-# =========================
-# GET BY ID
-# =========================
-@api.get("/people/search/{id}", response=PersonSchema)
-def get_person(request, id: int):
-    person = get_person_by_id(id)
-
-    if not person:
-        return api.create_response(
-            request,
-            {"detail": "Person not found"},
-            status=404
-        )
-
-    return person
-
 
 # =========================
 # UPDATE
@@ -109,18 +91,25 @@ def update_person_view(request, person_id: int, payload: CreatePersonSchema):
 # =========================
 # DELETE
 # =========================
-@api.delete("/people/{person_id}")
-def delete_person_view(request, person_id: int):
-    deleted = delete_person(person_id)
 
-    if not deleted:
+@api.delete("/people/{person_id}")
+def delete_person_api(request, person_id: int):
+    try:
+        result = delete_person(person_id)
+
+        # 👇 إذا مو موجود
+        if result is None:
+            raise HttpError(404, "Person not found")
+
+        # 👇 نجاح
         return {
-            "success": False,
-            "message": "Person not found"
+            "message": "Person deleted successfully"
         }
 
-    return {
-        "success": True,
-        "message": "Person deleted successfully",
-        "deleted_id": deleted.id
-    }
+    except DatabaseError:
+        # 👇 مشكلة سيرفر / DB
+        raise HttpError(500, "Internal server error")
+
+    except Exception:
+        # 👇 أي خطأ غير متوقع
+        raise HttpError(500, "Unexpected error occurred")

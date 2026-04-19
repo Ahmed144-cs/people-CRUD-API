@@ -1,14 +1,14 @@
 from typing import Optional
 from datetime import date
-
+from django.db import DatabaseError
 from .models import Person
 from .utils import calculate_age
-
 
 # =========================
 # GET (Filter)
 # =========================
 def get_people(
+    id: Optional[int] = None,  # 👈 أضف هذا
     name: Optional[str] = None,
     min_age: Optional[int] = None,
     max_age: Optional[int] = None,
@@ -17,6 +17,9 @@ def get_people(
     is_married: Optional[bool] = None,
 ):
     queryset = Person.objects.all()
+
+    if id is not None:
+        queryset = queryset.filter(id=id)
 
     if name:
         queryset = queryset.filter(name__icontains=name)
@@ -36,7 +39,7 @@ def get_people(
     if is_married is not None:
         queryset = queryset.filter(is_married=is_married)
 
-    return queryset   # 🔥 نرجع QuerySet مو list
+    return queryset
 
 
 # =========================
@@ -81,16 +84,10 @@ def delete_person(person_id: int):
     try:
         person = Person.objects.get(id=person_id)
         person.delete()
-        return person
+        return True
+
     except Person.DoesNotExist:
         return None
 
-
-# =========================
-# GET BY ID
-# =========================
-def get_person_by_id(person_id: int):
-    try:
-        return Person.objects.get(id=person_id)
-    except Person.DoesNotExist:
-        return None
+    except DatabaseError:
+        raise
