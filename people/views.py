@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from ninja import NinjaAPI, Query
 from typing import Optional
-from django.db import DatabaseError
+from datetime import date
 from ninja.errors import HttpError
 
 from .schemas import (
@@ -15,10 +15,8 @@ from .services import (
     create_person,
     update_person,
     delete_person,
+    get_people_paginated,
 )
-
-from .utils import paginate
-
 
 api = NinjaAPI()
 
@@ -26,19 +24,23 @@ api = NinjaAPI()
 # =========================
 # GET (Filter + Pagination)
 # =========================
+from .utils import paginate_queryset
+
 @api.get("/people", response=PaginatedPeopleSchema)
 def list_people(
     request,
-    id: Optional[int] = None,  # 👈 جديد
+    id: Optional[int] = None,
     name: Optional[str] = None,
     min_age: Optional[int] = None,
     max_age: Optional[int] = None,
-    start_date: Optional[str] = None,
-    end_date: Optional[str] = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
     is_married: Optional[bool] = None,
-    page: int = Query(1)
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, le=100),
+    order_by: Optional[str] = None,
 ):
-    queryset = get_people(
+    result = get_people_paginated(
         id=id,
         name=name,
         min_age=min_age,
@@ -46,16 +48,17 @@ def list_people(
         start_date=start_date,
         end_date=end_date,
         is_married=is_married,
+        order_by=order_by,
+        page=page,
+        page_size=page_size,
     )
 
-    paginated = paginate(queryset, page)
-
     return {
-        "people": paginated["items"],
-        "page": paginated["page"],
-        "total_pages": paginated["total_pages"],
-        "has_next": paginated["has_next"],
-        "has_prev": paginated["has_prev"],
+        "people": result["items"],
+        "page": result["page"],
+        "total_pages": result["total_pages"],
+        "has_next": result["has_next"],
+        "has_prev": result["has_prev"],
     }
 
 
@@ -69,6 +72,7 @@ def create_person_view(request, payload: CreatePersonSchema):
         birth_date=payload.birth_date,
         is_married=payload.is_married
     )
+
 
 # =========================
 # UPDATE
@@ -91,25 +95,12 @@ def update_person_view(request, person_id: int, payload: CreatePersonSchema):
 # =========================
 # DELETE
 # =========================
-
 @api.delete("/people/{person_id}")
 def delete_person_api(request, person_id: int):
-    try:
-        result = delete_person(person_id)
+    result = delete_person(person_id)
 
-        # 👇 إذا مو موجود
-        if result is None:
-            raise HttpError(404, "Person not found")
+    if result is None:
+        raise HttpError(404, "Person not found")
 
-        # 👇 نجاح
-        return {
-            "message": "Person deleted successfully"
-        }
-
-    except DatabaseError:
-        # 👇 مشكلة سيرفر / DB
-        raise HttpError(500, "Internal server error")
-
-    except Exception:
-        # 👇 أي خطأ غير متوقع
-        raise HttpError(500, "Unexpected error occurred")
+    # 👇 REST Best Practice
+    return HttpResponse(status=204)

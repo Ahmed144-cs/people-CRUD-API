@@ -4,8 +4,9 @@ from datetime import datetime, date
 # =========================
 # Pagination
 # =========================
-def paginate(data, page: int, page_size: int = 20):
-    total_items = len(data)
+def paginate_queryset(queryset, page: int, page_size: int = 20):
+    total_items = queryset.count()
+
     total_pages = (total_items + page_size - 1) // page_size
 
     page = max(1, min(page, total_pages if total_pages > 0 else 1))
@@ -13,8 +14,10 @@ def paginate(data, page: int, page_size: int = 20):
     start = (page - 1) * page_size
     end = start + page_size
 
+    items = queryset[start:end]
+
     return {
-        "items": data[start:end],
+        "items": items,
         "page": page,
         "total_pages": total_pages,
         "has_next": page < total_pages,
