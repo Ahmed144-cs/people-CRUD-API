@@ -24,8 +24,6 @@ api = NinjaAPI()
 # =========================
 # GET (Filter + Pagination)
 # =========================
-from .utils import paginate_queryset
-
 @api.get("/people", response=PaginatedPeopleSchema)
 def list_people(
     request,
@@ -56,9 +54,13 @@ def list_people(
     return {
         "people": result["items"],
         "page": result["page"],
+        "page_size": result["page_size"],
+        "total_items": result["total_items"],
         "total_pages": result["total_pages"],
         "has_next": result["has_next"],
         "has_prev": result["has_prev"],
+        "next_page": result["next_page"],
+        "prev_page": result["prev_page"],
     }
 
 

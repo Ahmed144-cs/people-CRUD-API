@@ -42,6 +42,10 @@ class UpdatePersonSchema(Schema):
 class PaginatedPeopleSchema(Schema):
     people: List[PersonSchema]
     page: int
+    page_size: int
+    total_items: int
     total_pages: int
     has_next: bool
     has_prev: bool
+    next_page: Optional[int]
+    prev_page: Optional[int]
