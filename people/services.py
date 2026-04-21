@@ -56,14 +56,17 @@ def get_people_paginated(
         order_by=order_by,
     )
 
-    # حالة جلب شخص واحد
+    # 1️⃣ حالة id أولاً (مهم جداً)
     if id is not None:
         person = queryset.first()
+        if not person:
+            return empty_response(1)
+
         return {
-            "items": [person] if person else [],
+            "items": [person],
             "current_page": 1,
             "page_size": 1,
-            "total_items": 1 if person else 0,
+            "total_items": 1,
             "total_pages": 1,
             "has_next": False,
             "has_prev": False,
@@ -71,8 +74,24 @@ def get_people_paginated(
             "prev_page": None,
         }
 
-    # pagination طبيعي
+    # 2️⃣ حالة no results بعد الفلترة
+    if not queryset.exists():
+        return empty_response(page_size)
+    # 3️⃣ pagination الطبيعي
     return paginate_queryset(queryset, page, page_size)
+
+def empty_response(page_size):
+    return {
+        "items": [],
+        "current_page": 0,
+        "page_size": page_size,
+        "total_items": 0,
+        "total_pages": 0,
+        "has_next": False,
+        "has_prev": False,
+        "next_page": None,
+        "prev_page": None,
+    }
 
 # =========================
 # CREATE
