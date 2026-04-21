@@ -7,6 +7,8 @@ from datetime import date
 
 fake = Faker()
 
+# Run this command to seed the database with fake data:
+#python manage.py seed_people
 
 class Command(BaseCommand):
     help = "Seed database with fake people"
