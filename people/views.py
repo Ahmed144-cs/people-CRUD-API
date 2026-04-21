@@ -53,7 +53,7 @@ def list_people(
 
     return {
         "people": result["items"],
-        "page": result["page"],
+        "current_page": result["page"],
         "page_size": result["page_size"],
         "total_items": result["total_items"],
         "total_pages": result["total_pages"],

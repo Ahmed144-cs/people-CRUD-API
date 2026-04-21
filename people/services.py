@@ -29,8 +29,9 @@ def get_people(
         start_date=start_date,
         end_date=end_date,
         is_married=is_married,
-        order_by=order_by,  # 👈 هذا المهم
+        order_by=order_by,
     )
+
 
 def get_people_paginated(
     id=None,
@@ -55,17 +56,22 @@ def get_people_paginated(
         order_by=order_by,
     )
 
-    # 👇 إذا id موجود
+    # حالة جلب شخص واحد
     if id is not None:
         person = queryset.first()
         return {
             "items": [person] if person else [],
-            "page": 1,
+            "current_page": 1,
+            "page_size": 1,
+            "total_items": 1 if person else 0,
             "total_pages": 1,
             "has_next": False,
             "has_prev": False,
+            "next_page": None,
+            "prev_page": None,
         }
 
+    # pagination طبيعي
     return paginate_queryset(queryset, page, page_size)
 
 # =========================
